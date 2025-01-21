@@ -1,6 +1,22 @@
+<script setup lang="ts">
+// Components are automatically imported
+</script>
+
 <template>
-  <div>
-    <NuxtRouteAnnouncer />
-    <NuxtWelcome />
-  </div>
+	<header>
+		<SignedOut>
+			<SignInButton />
+		</SignedOut>
+		<SignedIn>
+			<UserButton />
+		</SignedIn>
+	</header>
+
+	<main>
+		<NuxtPage />
+		<div>
+			<NuxtRouteAnnouncer />
+			<NuxtWelcome />
+		</div>
+	</main>
 </template>
