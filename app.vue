@@ -13,10 +13,12 @@
 	</header>
 
 	<main>
-		<NuxtPage />
+
+        TESTING TESTING SIMPLE PAGE STUFF!
+		<!-- <NuxtPage /> 
 		<div>
 			<NuxtRouteAnnouncer />
 			<NuxtWelcome />
-		</div>
+		</div> -->
 	</main>
 </template>
