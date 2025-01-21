@@ -3,11 +3,12 @@
 @tailwind utilities;
 
 @layer components {
-  .text-nerv {
-    font-family: "Times New Roman", Times, serif;
-    font-weight: bold;
-    transform: scaleX(0.79);
-    transform-origin: left;
-    display: inline-block;
-  }
+	.text-nerv {
+		font-family: "Times New Roman", Times, serif;
+		font-weight: bold;
+		transform: scaleX(0.79);
+		transform-origin: left;
+		display: inline-block;
+		color: #e31e24;
+	}
 }
