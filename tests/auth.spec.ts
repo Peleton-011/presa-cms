@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test('User can sign in with Clerk', async ({ page }) => {
+//This test is disabled as the auth is handled by Clerk
+test.skip('User can sign in with Clerk', async ({ page }) => {
   await page.goto('/');
 
   // Click on "Sign In" button
