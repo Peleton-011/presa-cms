@@ -215,7 +215,7 @@ const handleVerification = async () => {
 						</p>
 					</div>
 				</div>
-				<footer class="text-xs md:text-sm">
+				<footer class="text-xs md:text-sm text-tnr">
 					Under the supervision of
 					<a
 						href="https://www.un.org/"
@@ -232,7 +232,7 @@ const handleVerification = async () => {
 				class="md:col-span-3 p-8 bg-black/50 backdrop-blur-md flex flex-col gap-8"
 			>
 				<blockquote
-					class="pl-6 border-l-4 border-[#e31e24] text-2xl italic"
+					class="pl-6 border-l-4 border-[#e31e24] text-2xl italic text-tnr"
 				>
 					Extreme situations call for extreme measures.<br />
 					Do what you know is right.
@@ -243,7 +243,9 @@ const handleVerification = async () => {
 					class="flex flex-col gap-4"
 					v-if="!pendingVerification"
 				>
-					<legend class="text-xl font-bold">Let's do this!</legend>
+					<legend class="text-xl font-bold text-crimson">
+						Let's do this!
+					</legend>
 
 					<div
 						class="grid md:grid-cols-2 gap-4 p-4 bg-black/25 backdrop-blur-sm"
@@ -319,7 +321,7 @@ const handleVerification = async () => {
 					class="flex flex-col gap-4"
 					@submit.prevent="handleVerification"
 				>
-					<legend class="text-xl font-bold">
+					<legend class="text-xl font-bold text-crimson">
 						Just one last step!
 					</legend>
 

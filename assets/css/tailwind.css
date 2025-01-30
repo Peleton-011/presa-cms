@@ -11,4 +11,14 @@
 		display: inline-block;
 		color: #e31e24;
 	}
+
+	.text-tnr {
+		font-family: "Times New Roman", Times, serif;
+		display: inline-block;
+		color: #e31e24;
+	}
+
+	.text-crimson {
+		color: #e31e24;
+	}
 }
