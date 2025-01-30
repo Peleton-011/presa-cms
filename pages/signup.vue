@@ -1,22 +1,25 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useSignUp } from "@clerk/vue";
+import { useSignUp, useClerk } from "@clerk/vue";
 import { useToast } from "@/composables/useToast";
 import { navigateTo } from "#app/composables/router";
 
-const { signUp } = useSignUp();
+const { isLoaded, signUp, setActive } = useSignUp();
 const { showToast } = useToast();
+const clerk = useClerk();
 
-const form = ref({
-	first_name: "",
-	last_name: "",
-	email: "",
-	phone_number: "",
-	password: "",
-	password_confirmation: "",
-});
+interface formField {
+	name: string;
+	id: string;
+	label: string;
+	type: string;
+	required: boolean;
+	placeholder: string;
+	pattern: RegExp;
+	validationHint: string;
+}
 
-const formFields = [
+const formFields: formField[] = [
 	{
 		name: "first_name",
 		id: "first-name",
@@ -64,6 +67,7 @@ const formFields = [
 		type: "password",
 		required: true,
 		pattern: /^[\d\w@-]{8,20}$/i,
+		placeholder: "",
 		validationHint:
 			"Password must be alphanumeric (@, _ and - are also allowed) and be 8 - 20 characters",
 	},
@@ -73,9 +77,24 @@ const formFields = [
 		label: "Confirm Password:",
 		type: "password",
 		required: true,
+		pattern: /^[\d\w@-]{8,20}$/i,
+		placeholder: "",
 		validationHint: "Passwords must match",
 	},
 ] as const;
+
+const pendingVerification = ref(false);
+const verificationCode = ref("");
+const verificationError = ref(false);
+
+const showPassword = ref(false);
+
+const form = ref(
+	formFields.reduce((acc, field) => {
+		acc[field.name] = "";
+		return acc;
+	}, {} as Record<string, string>)
+);
 
 const fieldValidation = ref<Record<string, boolean>>({});
 
@@ -95,6 +114,11 @@ const handleInput = (field: (typeof formFields)[number]) => {
 
 const handleSignUp = async () => {
 	try {
+		if (!signUp.value || !isLoaded.value) {
+			showToast("Sign-up is not ready. Please try again later.", "error");
+			return;
+		}
+
 		// Validate all fields before submission
 		const isValid = formFields.every((field) =>
 			validateField(field, form.value[field.name])
@@ -105,129 +129,207 @@ const handleSignUp = async () => {
 			return;
 		}
 
-		await signUp.create({
+		// Start the sign-up process
+		const signUpResponse = await signUp.value.create({
 			emailAddress: form.value.email,
 			password: form.value.password,
 			firstName: form.value.first_name,
 			lastName: form.value.last_name,
-			phoneNumber: form.value.phone_number,
+			// phoneNumber: form.value.phone_number,
 		});
 
-		showToast("Sign-up successful!", "success");
-		navigateTo("/dashboard"); // Or wherever you want to redirect after signup
+		// Start email verification
+		await signUp.value.prepareEmailAddressVerification({
+			strategy: "email_code",
+		});
+
+		pendingVerification.value = true;
 	} catch (error) {
 		console.error(error);
 		showToast("Error during sign-up. Please try again.", "error");
 	}
 };
+
+const handleVerification = async () => {
+	try {
+		const completeSignUp =
+			await signUp.value?.attemptEmailAddressVerification({
+				code: verificationCode.value,
+			});
+
+		if (completeSignUp?.status === "complete") {
+			await clerk.value?.setActive({
+				session: completeSignUp.createdSessionId,
+			});
+			showToast("Sign-up successful", "success");
+			await navigateTo("/");
+		} else {
+			throw new Error("Verification failed");
+		}
+	} catch (error) {
+		console.error(error);
+		showToast("Error during verification. Please try again.", "error");
+	}
+};
 </script>
 
 <template>
-	<div
-		class="min-h-screen grid md:grid-cols-5 bg-cover"
-		style="background-image: url('/images/background.jpg')"
-	>
-		<ToastContainer />
-
-		<!-- Sidebar -->
-		<aside
-			class="md:col-span-2 flex flex-col justify-between items-center py-16 px-4 bg-black/75"
+	<div v-if="isLoaded">
+		<div
+			class="min-h-screen grid md:grid-cols-5 bg-cover"
+			style="background-image: url('/images/background.jpg')"
 		>
-			<div
-				class="w-full flex flex-row flex-nowrap justify-center items-center"
+			<ToastContainer />
+
+			<!-- Sidebar -->
+			<aside
+				class="md:col-span-2 flex flex-col justify-between items-center py-16 px-4 bg-black/75"
 			>
-				<!-- Using standard size classes instead of clamp -->
-				<img
-					src="/images/NERV-logo.png"
-					alt="NERV Logo"
-					class="w-20 md:w-40 lg:w-44 h-auto m-12"
-				/>
-				<div class="flex flex-col">
-					<!-- Using standard text size classes -->
-					<p
-						class="font-bold text-fluidLarge border-b-2 border-[#e31e24] text-nerv"
-					>
-						NERV
-					</p>
-					<p class="w-full text-xs md:text-sm mt-2">
-						To protect. To attack. To explore.
-					</p>
-				</div>
-			</div>
-			<footer class="text-xs md:text-sm">
-				Under the supervision of
-				<a
-					href="https://www.un.org/"
-					target="_blank"
-					class="text-[#f18f01] hover:text-[#ebebd3] active:text-[#e31e24] transition-colors"
-				>
-					the UN
-				</a>
-			</footer>
-		</aside>
-
-		<!-- Main Content -->
-		<main
-			class="md:col-span-3 p-8 bg-black/50 backdrop-blur-md flex flex-col gap-8"
-		>
-			<blockquote
-				class="pl-6 border-l-4 border-[#e31e24] text-2xl italic"
-			>
-				Extreme situations call for extreme measures.<br />
-				Do what you know is right.
-			</blockquote>
-
-			<form @submit.prevent="handleSignUp" class="flex flex-col gap-4">
-				<legend class="text-xl font-bold">Let's do this!</legend>
-
 				<div
-					class="grid md:grid-cols-2 gap-4 p-4 bg-black/25 backdrop-blur-sm"
+					class="w-full flex flex-row flex-nowrap justify-center items-center"
 				>
-					<div
-						v-for="field in formFields"
-						:key="field.id"
-						class="flex flex-col gap-2"
-					>
-						<label :for="field.id" class="text-[#e31e24]">
-							{{ field.label }}
-						</label>
-						<input
-							:type="field.type"
-							:name="field.name"
-							:id="field.id"
-							v-model="form[field.name]"
-							:required="field.required"
-							:placeholder="field.placeholder"
-							@input="handleInput(field)"
-							class="w-full bg-[#071013] text-[#ebebd3] border border-white/20 p-2 rounded focus:outline-none focus:border-[#e31e24] transition-colors"
-							:class="{
-								'border-[#f18f01] shake':
-									fieldValidation[field.name] === false,
-							}"
-						/>
+					<!-- Using standard size classes instead of clamp -->
+					<img
+						src="/images/NERV-logo.png"
+						alt="NERV Logo"
+						class="w-20 md:w-40 lg:w-44 h-auto m-12"
+					/>
+					<div class="flex flex-col">
+						<!-- Using standard text size classes -->
 						<p
-							class="text-sm text-[#f18f01] transition-opacity duration-200"
-							:class="{
-								'opacity-100':
-									fieldValidation[field.name] === false,
-								'opacity-0':
-									fieldValidation[field.name] !== false,
-							}"
+							class="font-bold text-fluidLarge border-b-2 border-[#e31e24] text-nerv"
 						>
-							{{ field.validationHint }}
+							NERV
+						</p>
+						<p class="w-full text-xs md:text-sm mt-2">
+							To protect. To attack. To explore.
 						</p>
 					</div>
-
-					<button
-						type="submit"
-						class="md:col-span-2 mt-4 px-4 py-2 bg-[#e31e24] text-[#071013] rounded border border-white/20 hover:border-transparent active:bg-[#071013] active:text-[#e31e24] active:border-[#e31e24] transition-all duration-200"
-					>
-						Join Us
-					</button>
 				</div>
-			</form>
-		</main>
+				<footer class="text-xs md:text-sm">
+					Under the supervision of
+					<a
+						href="https://www.un.org/"
+						target="_blank"
+						class="text-[#f18f01] hover:text-[#ebebd3] active:text-[#e31e24] transition-colors"
+					>
+						the UN
+					</a>
+				</footer>
+			</aside>
+
+			<!-- Main Content -->
+			<main
+				class="md:col-span-3 p-8 bg-black/50 backdrop-blur-md flex flex-col gap-8"
+			>
+				<blockquote
+					class="pl-6 border-l-4 border-[#e31e24] text-2xl italic"
+				>
+					Extreme situations call for extreme measures.<br />
+					Do what you know is right.
+				</blockquote>
+
+				<form
+					@submit.prevent="handleSignUp"
+					class="flex flex-col gap-4"
+					v-if="!pendingVerification"
+				>
+					<legend class="text-xl font-bold">Let's do this!</legend>
+
+					<div
+						class="grid md:grid-cols-2 gap-4 p-4 bg-black/25 backdrop-blur-sm"
+					>
+						<div
+							v-for="field in formFields"
+							:key="field.id"
+							class="flex flex-col gap-2"
+						>
+							<label :for="field.id" class="text-[#e31e24]">
+								{{ field.label }}
+							</label>
+							<input
+								:type="field.type"
+								:name="field.name"
+								:id="field.id"
+								v-model="form[field.name]"
+								:required="field.required"
+								:placeholder="field.placeholder"
+								@input="handleInput(field)"
+								class="w-full bg-[#071013] text-[#ebebd3] border border-white/20 p-2 rounded focus:outline-none focus:border-[#e31e24] transition-colors"
+								:class="{
+									'border-[#f18f01] shake':
+										fieldValidation[field.name] === false,
+								}"
+							/>
+							<p
+								class="text-sm text-[#f18f01] transition-opacity duration-200"
+								:class="{
+									'opacity-100':
+										fieldValidation[field.name] === false,
+									'opacity-0':
+										fieldValidation[field.name] !== false,
+								}"
+							>
+								{{ field.validationHint }}
+							</p>
+						</div>
+
+						<button
+							type="submit"
+							class="md:col-span-2 mt-4 px-4 py-2 bg-[#e31e24] text-[#071013] rounded border border-white/20 hover:border-transparent active:bg-[#071013] active:text-[#e31e24] active:border-[#e31e24] transition-all duration-200"
+						>
+							Join Us
+						</button>
+					</div>
+				</form>
+				<form
+					v-else
+					class="flex flex-col gap-4"
+					@submit.prevent="handleVerification"
+				>
+					<legend class="text-xl font-bold">
+						Just one last step!
+					</legend>
+
+					<div
+						class="grid md:grid-cols-1 gap-4 p-4 bg-black/25 backdrop-blur-sm"
+					>
+						<div class="flex flex-col gap-2">
+							<label for="code" class="text-[#e31e24]">
+								Enter the validation code sent to your email
+							</label>
+							<input
+								type="text"
+								name="code"
+								id="code"
+								required="true"
+								placeholder="XXX XXX"
+								v-model="verificationCode"
+								class="w-full bg-[#071013] text-[#ebebd3] border border-white/20 p-2 rounded focus:outline-none focus:border-[#e31e24] transition-colors"
+							/>
+							<p
+								class="text-sm text-[#f18f01] transition-opacity duration-200"
+								:class="{
+									' opacity-100': verificationError,
+									' opacity-0': !verificationError,
+								}"
+							>
+								Wrong code. Please try again.
+							</p>
+						</div>
+
+						<button
+							type="submit"
+							class="md:col-span-2 mt-4 px-4 py-2 bg-[#e31e24] text-[#071013] rounded border border-white/20 hover:border-transparent active:bg-[#071013] active:text-[#e31e24] active:border-[#e31e24] transition-all duration-200"
+						>
+							Verify
+						</button>
+					</div>
+				</form>
+			</main>
+		</div>
 	</div>
+	<div v-else>Loading...</div>
 </template>
 
 <style scoped>
