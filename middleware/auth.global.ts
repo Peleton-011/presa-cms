@@ -7,5 +7,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
 	// If the user is not signed in, redirect to the signup page
 	if (!userId.value && !["/sign-up", "/sign-in"].includes(to.path)) {
 		return navigateTo("/sign-up");
+	} else if (userId.value && ["/sign-up", "/sign-in"].includes(to.path)) {
+		return navigateTo("/");
 	}
 });
