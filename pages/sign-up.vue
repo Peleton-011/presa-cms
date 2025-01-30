@@ -103,13 +103,15 @@ const form = ref(
 
 const fieldValidation = ref<Record<string, boolean>>({});
 
+const shouldShake = ref<Record<string, boolean>>({});
+
 const togglePasswordVisibility = (fieldName: string) => {
 	passwordVisibility.value[fieldName] = !passwordVisibility.value[fieldName];
 };
 
 const validateField = (field: (typeof formFields)[number], value: string) => {
 	if (field.name === "password_confirmation") {
-		return value === form.value.password;
+		return !!value && value === form.value.password;
 	}
 	return field.pattern?.test(value) ?? true;
 };
@@ -119,6 +121,19 @@ const handleInput = (field: (typeof formFields)[number]) => {
 		field,
 		form.value[field.name]
 	);
+};
+
+const handleBlur = (field: (typeof formFields)[number]) => {
+	const isValid = validateField(field, form.value[field.name]);
+	fieldValidation.value[field.name] = isValid;
+
+	if (!isValid) {
+		shouldShake.value[field.name] = true;
+		// Remove the shake class after animation completes
+		setTimeout(() => {
+			shouldShake.value[field.name] = false;
+		}, 500); // 500ms matches the total animation duration
+	}
 };
 
 const handleSignUp = async () => {
@@ -273,11 +288,13 @@ const handleVerification = async () => {
 									:required="field.required"
 									:placeholder="field.placeholder"
 									@input="handleInput(field)"
+									@blur="handleBlur(field)"
 									class="w-full bg-[#071013] text-[#ebebd3] border border-white/20 p-2 rounded focus:outline-none focus:border-[#e31e24] transition-colors"
 									:class="{
-										'border-[#f18f01] shake':
+										'border-[#f18f01]':
 											fieldValidation[field.name] ===
 											false,
+										shake: shouldShake[field.name],
 									}"
 								/>
 								<button
