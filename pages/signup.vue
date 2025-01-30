@@ -4,6 +4,8 @@ import { useSignUp, useClerk } from "@clerk/vue";
 import { useToast } from "@/composables/useToast";
 import { navigateTo } from "#app/composables/router";
 
+import { PiEyeFill, PiEyeDuotone, PiEyeClosed } from "vue-icons-plus/pi";
+
 const { isLoaded, signUp, setActive } = useSignUp();
 const { showToast } = useToast();
 const clerk = useClerk();
@@ -87,7 +89,10 @@ const pendingVerification = ref(false);
 const verificationCode = ref("");
 const verificationError = ref(false);
 
-const showPassword = ref(false);
+const passwordVisibility = ref<Record<string, boolean>>({
+	password: false,
+	password_confirmation: false,
+});
 
 const form = ref(
 	formFields.reduce((acc, field) => {
@@ -97,6 +102,10 @@ const form = ref(
 );
 
 const fieldValidation = ref<Record<string, boolean>>({});
+
+const togglePasswordVisibility = (fieldName: string) => {
+	passwordVisibility.value[fieldName] = !passwordVisibility.value[fieldName];
+};
 
 const validateField = (field: (typeof formFields)[number], value: string) => {
 	if (field.name === "password_confirmation") {
@@ -247,20 +256,43 @@ const handleVerification = async () => {
 							<label :for="field.id" class="text-[#e31e24]">
 								{{ field.label }}
 							</label>
-							<input
-								:type="field.type"
-								:name="field.name"
-								:id="field.id"
-								v-model="form[field.name]"
-								:required="field.required"
-								:placeholder="field.placeholder"
-								@input="handleInput(field)"
-								class="w-full bg-[#071013] text-[#ebebd3] border border-white/20 p-2 rounded focus:outline-none focus:border-[#e31e24] transition-colors"
-								:class="{
-									'border-[#f18f01] shake':
-										fieldValidation[field.name] === false,
-								}"
-							/>
+							<div class="relative">
+								<input
+									:type="
+										field.type === 'password'
+											? passwordVisibility[field.name]
+												? 'text'
+												: 'password'
+											: field.type
+									"
+									:name="field.name"
+									:id="field.id"
+									v-model="form[field.name]"
+									:required="field.required"
+									:placeholder="field.placeholder"
+									@input="handleInput(field)"
+									class="w-full bg-[#071013] text-[#ebebd3] border border-white/20 p-2 rounded focus:outline-none focus:border-[#e31e24] transition-colors"
+									:class="{
+										'border-[#f18f01] shake':
+											fieldValidation[field.name] ===
+											false,
+									}"
+								/>
+								<button
+									v-if="field.type === 'password'"
+									type="button"
+									@click="
+										togglePasswordVisibility(field.name)
+									"
+									class="absolute right-2 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+								>
+									<PiEyeFill
+										v-if="!passwordVisibility[field.name]"
+										class="w-5 h-5"
+									/>
+									<PiEyeClosed v-else class="w-5 h-5" />
+								</button>
+							</div>
 							<p
 								class="text-sm text-[#f18f01] transition-opacity duration-200"
 								:class="{

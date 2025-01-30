@@ -16,6 +16,7 @@
     "@nuxtjs/tailwindcss": "^6.13.1",
     "nuxt": "^3.15.2",
     "vue": "latest",
+    "vue-icons-plus": "^0.1.8",
     "vue-router": "latest"
   },
   "devDependencies": {
