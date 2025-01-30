@@ -331,6 +331,12 @@ const handleVerification = async () => {
 						>
 							Join Us
 						</button>
+						<p class="text-sm text-[#f18f01] text-center md:col-span-2">
+							Already have an account?
+							<NuxtLink to="/sign-in" class="text-[#e31e24]"
+								>Sign In</NuxtLink
+							>
+						</p>
 					</div>
 				</form>
 				<form
