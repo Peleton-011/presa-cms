@@ -1,19 +1,20 @@
 <template>
-    <div>
-      <h1>Welcome Back!</h1>
-      <p>You are signed in.</p>
-    </div>
-  </template>
-  
-  <script>
-  import { useAuth } from '@clerk/vue';
-  
-  export default {
-    setup() {
-      const { user } = useAuth();
-  
-      return { user };
-    },
-  };
-  </script>
-  
+	<header>
+		<h1>This should always be here</h1>
+		<SignedIn>
+			<UserButton />
+		</SignedIn>
+		{{ user ? user.firstName : "" }}
+	</header>
+</template>
+
+<script setup>
+import { SignedIn, UserButton, useAuth } from "@clerk/vue";
+
+const { user, isAuthenticated } = useAuth();
+
+definePageMeta({
+	// `auth` is the name of the middleware file
+	// middleware: ["auth"],
+});
+</script>
