@@ -5,7 +5,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
 	const { userId } = useAuth();
 
 	// If the user is not signed in, redirect to the signup page
-	if (!userId.value && !["/signup", "/signin"].includes(to.path)) {
-		return navigateTo("/signup");
+	if (!userId.value && !["/sign-up", "/sign-in"].includes(to.path)) {
+		return navigateTo("/sign-up");
 	}
 });
